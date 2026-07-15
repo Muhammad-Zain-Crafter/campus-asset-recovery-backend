@@ -15,6 +15,7 @@ app.use(cors({
     
     credentials: true
 }));
+app.use(express.static('public'));
 
 app.get("/", (req, res) => {
     res.send("Campus Asset Recovery API Running...");

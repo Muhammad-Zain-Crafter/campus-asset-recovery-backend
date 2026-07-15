@@ -3,10 +3,15 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import generateToken from "../utils/generateToken.js";
 import { AuthRequest } from "../middlewares/authMiddleware.js";
-import crypto from "crypto"
+import crypto from "crypto";
 import { sendEmail } from "../utils/sendEmail.js";
+import { uploadOnCloudinary } from "../config/cloudinary.js";
 
-const register = async (req: Request, res: Response) => {
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
+
+const register = async (req: MulterRequest, res: Response) => {
   try {
     const { fullName, email, password, studentId, department } = req.body;
     if (!fullName || !email || !password || !studentId || !department) {
@@ -15,28 +20,38 @@ const register = async (req: Request, res: Response) => {
         message: "All fields are required",
       });
     }
-
     const existingEmail = await User.findOne({
       email,
     });
     if (existingEmail) {
-      res.status(409).json({
+      return res.status(409).json({
         success: false,
         message: "Email already exists",
       });
-      return;
     }
     const existingStudent = await User.findOne({
       studentId,
     });
     if (existingStudent) {
-      res.status(409).json({
+      return res.status(409).json({
         success: false,
         message: "Student ID already exists",
       });
-      return;
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+    let profileImage = {
+      url: "",
+      publicId: "",
+    };
+    if (req.file?.path) {
+      const uploadedImage = await uploadOnCloudinary(req.file.path);
+      if (uploadedImage) {
+        profileImage = {
+          url: uploadedImage.secure_url,
+          publicId: uploadedImage.public_id,
+        };
+      }
+    }
 
     const user = await User.create({
       fullName,
@@ -44,6 +59,7 @@ const register = async (req: Request, res: Response) => {
       password: hashedPassword,
       studentId,
       department,
+      profileImage,
     });
     if (!user) {
       res.status(400).json({
@@ -51,7 +67,7 @@ const register = async (req: Request, res: Response) => {
         message: "User not created",
       });
     }
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Account created successfully",
       data: {
@@ -60,12 +76,12 @@ const register = async (req: Request, res: Response) => {
         email: user.email,
         studentId: user.studentId,
         department: user.department,
+        profileImage: user.profileImage,
       },
     });
   } catch (error: any) {
     console.error(error);
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });
@@ -75,7 +91,6 @@ const register = async (req: Request, res: Response) => {
 const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -113,7 +128,6 @@ const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
-
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -122,21 +136,123 @@ const login = async (req: Request, res: Response) => {
 };
 
 const getProfile = async (req: AuthRequest, res: Response) => {
-    try {
+  try {
     if (!req.user) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
       });
     }
-
     return res.status(200).json({
       success: true,
       user: req.user,
     });
   } catch (error) {
     console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 
+const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { fullName, department, profileImage } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (fullName) {
+      user.fullName = fullName;
+    }
+    if (department) {
+      user.department = department;
+    }
+    if (profileImage !== undefined) {
+      user.profileImage = profileImage;
+    }
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        studentId: user.studentId,
+        department: user.department,
+        profileImage: user.profileImage,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from current password",
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -149,8 +265,7 @@ const logout = async (req: Request, res: Response) => {
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite:
-        process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     return res.status(200).json({
@@ -195,6 +310,7 @@ const forgotPassword = async (req: Request, res: Response) => {
       .digest("hex");
 
     user.forgotPasswordToken = hashedToken;
+    // token expired after 15 min
     user.forgotPasswordTokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
 
     await user.save();
@@ -282,5 +398,13 @@ const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-
-export {register, login, getProfile, logout, forgotPassword, resetPassword}
+export {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  changePassword,
+  logout,
+  forgotPassword,
+  resetPassword
+};

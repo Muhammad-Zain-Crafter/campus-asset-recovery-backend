@@ -35,9 +35,15 @@ const userSchema = new Schema(
     },
 
     profileImage: {
-      type: String,
-      required: false,
-      default: "",
+      url: {
+        type: String,
+        default: "",
+      },
+
+      publicId: {
+        type: String,
+        default: "",
+      },
     },
     forgotPasswordToken: {
       type: String,
