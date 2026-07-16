@@ -22,7 +22,10 @@ app.get("/", (req, res) => {
 });
 
 import userRouter from "./routes/userRoute.js"
-app.use("/api/v1/users/", userRouter)
+import assetRouter from "./routes/assetRoute.js"
+
+app.use("/api/v1/campusAssetRecovery/users/", userRouter)
+app.use("/api/v1/campusAssetRecovery/assets/", assetRouter)
 
 
 

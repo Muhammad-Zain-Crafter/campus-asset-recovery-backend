@@ -44,7 +44,10 @@ const register = async (req: MulterRequest, res: Response) => {
       publicId: "",
     };
     if (req.file?.path) {
-      const uploadedImage = await uploadOnCloudinary(req.file.path);
+      const uploadedImage = await uploadOnCloudinary(
+        req.file.path,
+        "student-management/profile-images"
+      );
       if (uploadedImage) {
         profileImage = {
           url: uploadedImage.secure_url,

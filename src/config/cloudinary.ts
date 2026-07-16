@@ -9,12 +9,13 @@ export const configureCloudinary = () => {
   });
 };
 
-export const uploadOnCloudinary = async (filePath: string) => {
+export const uploadOnCloudinary = async (filePath: string, folder: string) => {
   try {
     if (!filePath) return null;
 
     const response = await cloudinary.uploader.upload(filePath, {
-      folder: "student-management/profile-images",
+      folder,
+      resource_type: "auto",
     });
 
     // Delete local file after upload
