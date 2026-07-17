@@ -23,10 +23,11 @@ app.get("/", (req, res) => {
 
 import userRouter from "./routes/userRoute.js"
 import assetRouter from "./routes/assetRoute.js"
+import claimRouter from "./routes/claimRoute.js";
 
 app.use("/api/v1/campusAssetRecovery/users/", userRouter)
 app.use("/api/v1/campusAssetRecovery/assets/", assetRouter)
-
+app.use("/api/v1/campusAssetRecovery/claims/", claimRouter);
 
 
 export default app;

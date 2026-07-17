@@ -15,7 +15,7 @@ const register = async (req: MulterRequest, res: Response) => {
   try {
     const { fullName, email, password, studentId, department } = req.body;
     if (!fullName || !email || !password || !studentId || !department) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
@@ -65,7 +65,7 @@ const register = async (req: MulterRequest, res: Response) => {
       profileImage,
     });
     if (!user) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "User not created",
       });
