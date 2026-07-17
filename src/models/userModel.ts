@@ -7,7 +7,6 @@ const userSchema = new Schema(
       required: true,
       trim: true,
     },
-
     email: {
       type: String,
       required: true,
@@ -15,31 +14,31 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-
     password: {
       type: String,
       required: true,
       minlength: 6,
     },
-
     studentId: {
       type: String,
       required: true,
       unique: true,
       trim: true,
     },
-
     department: {
       type: String,
       required: true,
     },
-
+    role: {
+      type: String,
+      enum: ["student", "admin"],
+      default: "student",
+    },
     profileImage: {
       url: {
         type: String,
         default: "",
       },
-
       publicId: {
         type: String,
         default: "",

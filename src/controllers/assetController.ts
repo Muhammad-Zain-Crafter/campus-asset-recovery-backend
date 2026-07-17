@@ -150,12 +150,12 @@ const updateAsset = async (req: MulterRequest, res: Response) => {
   try {
     const asset = await Asset.findById(req.params.id);
 
-    // if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Invalid asset ID",
-    //   });
-    // }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id as string)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid asset ID",
+      });
+    }
     if (!asset) {
       return res.status(404).json({
         success: false,
@@ -258,6 +258,51 @@ const deleteAsset = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+const approveAsset = async (req: Request, res: Response) => {
+  try {
+    const asset = await Asset.findById(req.params.id);
+    if (!asset) {
+      return res.json({
+        success: false,
+        message: "Asset not found",
+      });
+    }
+    asset.isApproved = true;
+    await asset.save();
+    return res.status(200).json({
+      success: true,
+      message: "Asset approved successfully",
+      data: asset,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+const getPendingAssets = async (req: Request, res: Response) => {
+  try {
+    const assets = await Asset.find({
+      isApproved: false,
+    })
+      .populate("owner", "fullName studentId")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: assets.length,
+      data: assets,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 export {
   reportAsset,
   getAllAssets,
@@ -265,4 +310,6 @@ export {
   getMyAssets,
   updateAsset,
   deleteAsset,
+  approveAsset,
+  getPendingAssets
 };

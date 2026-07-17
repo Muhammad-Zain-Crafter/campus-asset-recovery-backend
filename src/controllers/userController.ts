@@ -100,7 +100,6 @@ const login = async (req: Request, res: Response) => {
         message: "Email and password are required",
       });
     }
-
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
@@ -109,7 +108,6 @@ const login = async (req: Request, res: Response) => {
       });
     }
     const isPasswordMatch = await bcrypt.compare(password, user.password);
-
     if (!isPasswordMatch) {
       return res.status(401).json({
         success: false,
@@ -127,6 +125,7 @@ const login = async (req: Request, res: Response) => {
         email: user.email,
         studentId: user.studentId,
         department: user.department,
+        role: user.role
       },
     });
   } catch (error) {
