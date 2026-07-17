@@ -268,6 +268,11 @@ const approveAsset = async (req: Request, res: Response) => {
         message: "Asset not found",
       });
     }
+    if (asset.isApproved === true) {
+      return res.json({
+        message: "asset already approved",
+      });
+    }
     asset.isApproved = true;
     await asset.save();
     return res.status(200).json({
@@ -282,6 +287,7 @@ const approveAsset = async (req: Request, res: Response) => {
     });
   }
 };
+
 const getPendingAssets = async (req: Request, res: Response) => {
   try {
     const assets = await Asset.find({
@@ -311,5 +317,5 @@ export {
   updateAsset,
   deleteAsset,
   approveAsset,
-  getPendingAssets
+  getPendingAssets,
 };
