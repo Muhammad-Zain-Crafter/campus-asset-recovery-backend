@@ -9,7 +9,7 @@ A full-stack MERN application that helps students report lost and found items on
 The following use case diagram illustrates the interactions between the two primary actors in the system: **Student** and **Admin**.
 
 <p align="center">
-  <img src="docs/usecase-diagram.png" alt="Use Case Diagram" width="900"/>
+  <img src="docsusecase-diagram.png" alt="Use Case Diagram" width="900"/>
 </p>
 
 ---
