@@ -61,7 +61,7 @@ const reportAsset = async (req: MulterRequest, res: Response) => {
       location,
       date,
       image,
-      owner: req.user._id,
+      reportedBy: req.user._id,
     });
     return res.status(201).json({
       success: true,
@@ -79,7 +79,7 @@ const reportAsset = async (req: MulterRequest, res: Response) => {
 const getAllAssets = async (req: Request, res: Response) => {
   try {
     const assets = await Asset.find({ isApproved: true })
-      .populate("owner", "fullName studentId")
+      .populate("reportedBy", "fullName studentId")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -100,7 +100,7 @@ const getAllAssets = async (req: Request, res: Response) => {
 const getAssetById = async (req: Request, res: Response) => {
   try {
     const asset = await Asset.findById(req.params.id).populate(
-      "owner",
+      "reportedBy",
       "fullName studentId",
     );
 
@@ -128,7 +128,7 @@ const getAssetById = async (req: Request, res: Response) => {
 const getMyAssets = async (req: AuthRequest, res: Response) => {
   try {
     const assets = await Asset.find({
-      owner: req.user._id,
+      reportedBy: req.user._id,
     }).sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -163,7 +163,7 @@ const updateAsset = async (req: MulterRequest, res: Response) => {
       });
     }
 
-    if (asset.owner.toString() !== req.user._id.toString()) {
+    if (asset.reportedBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized",
@@ -232,7 +232,7 @@ const deleteAsset = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (asset.owner.toString() !== req.user._id.toString()) {
+    if (asset.reportedBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized",
@@ -293,9 +293,16 @@ const getPendingAssets = async (req: Request, res: Response) => {
     const assets = await Asset.find({
       isApproved: false,
     })
-      .populate("owner", "fullName studentId")
+      .populate("reportedBy", "fullName studentId")
       .sort({ createdAt: -1 });
-
+    if (assets.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No pending assets",
+        count: 0,
+        data: [],
+      });
+    }
     return res.status(200).json({
       success: true,
       count: assets.length,

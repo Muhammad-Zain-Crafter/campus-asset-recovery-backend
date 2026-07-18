@@ -27,7 +27,7 @@ router.route("/delete-asset/:id").delete(
 router.route('/:id/approve').patch(
     protect, adminOnly, approveAsset
 )
-router.route('/get-pendingAssets/').get(
+router.route('/get-pendingAssets').get(
     protect, adminOnly, getPendingAssets
 )
 export default router

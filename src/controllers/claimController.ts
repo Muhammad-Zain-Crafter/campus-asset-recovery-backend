@@ -47,10 +47,10 @@ const createClaim = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (asset.owner.toString() === req.user._id.toString()) {
+    if (asset.reportedBy.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
-        message: "You cannot claim your own reported asset",
+        message: "You cannot claim an asset that you reported.",
       });
     }
 
@@ -128,10 +128,10 @@ const getClaimsForAsset = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const isOwner = asset.owner.toString() === req.user._id.toString();
+    const isReporter = asset.reportedBy.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
 
-    if (!isOwner && !isAdmin) {
+    if (!isReporter && !isAdmin) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to view these claims",
@@ -244,7 +244,12 @@ const approveClaim = async (req: AuthRequest, res: Response) => {
     // auto-reject any other pending claims on this asset
     await Claim.updateMany(
       { asset: asset._id, status: "pending", _id: { $ne: claim._id } },
-      { $set: { status: "rejected", adminNote: "Asset already claimed by another user" } },
+      {
+        $set: {
+          status: "rejected",
+          adminNote: "Asset already claimed by another user",
+        },
+      },
     );
 
     return res.status(200).json({

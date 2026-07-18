@@ -57,7 +57,7 @@ const assetSchema = new Schema(
         default: "",
       },
     },
-    owner: {
+    reportedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
