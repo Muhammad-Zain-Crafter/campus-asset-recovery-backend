@@ -64,4 +64,9 @@ app.use((err: any, req: any, res: any, next: any) => {
   });
 });
 
+// test route
+app.get('/', (req, res) => {
+    res.send('Welcome to the Campus Asset Recovery API');
+})
+
 export default app;
