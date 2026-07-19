@@ -158,14 +158,27 @@ const getClaimsForAsset = async (req: AuthRequest, res: Response) => {
 
 const getAllClaims = async (req: AuthRequest, res: Response) => {
   try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalItems = await Claim.countDocuments();
+
     const claims = await Claim.find()
       .populate("asset")
       .populate("claimedBy", "fullName studentId department")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalPages = Math.ceil(totalItems / limit);
 
     return res.status(200).json({
       success: true,
       count: claims.length,
+      currentPage: page,
+      totalPages,
+      totalItems,
       data: claims,
     });
   } catch (error) {

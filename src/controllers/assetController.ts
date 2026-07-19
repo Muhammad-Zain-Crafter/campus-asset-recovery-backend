@@ -78,13 +78,41 @@ const reportAsset = async (req: MulterRequest, res: Response) => {
 
 const getAllAssets = async (req: Request, res: Response) => {
   try {
-    const assets = await Asset.find({ isApproved: true })
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const search = req.query.search?.toString().trim();
+
+    const filter: any = {
+      isApproved: true,
+    };
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const totalItems = await Asset.countDocuments(filter);
+
+    const assets = await Asset.find(filter)
       .populate("reportedBy", "fullName studentId")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalPages = Math.ceil(totalItems / limit);
 
     return res.status(200).json({
       success: true,
       count: assets.length,
+      currentPage: page,
+      totalPages,
+      totalItems,
       data: assets,
     });
   } catch (error) {
@@ -290,25 +318,58 @@ const approveAsset = async (req: Request, res: Response) => {
 
 const getPendingAssets = async (req: Request, res: Response) => {
   try {
-    const assets = await Asset.find({
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const search = req.query.search?.toString().trim();
+
+    const filter: any = {
       isApproved: false,
-    })
+    };
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const totalItems = await Asset.countDocuments(filter);
+
+    const assets = await Asset.find(filter)
       .populate("reportedBy", "fullName studentId")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
     if (assets.length === 0) {
       return res.status(200).json({
         success: true,
-        message: "No pending assets",
+        message: "No pending assets found",
         count: 0,
+        currentPage: page,
+        totalPages,
+        totalItems,
         data: [],
       });
     }
+
     return res.status(200).json({
       success: true,
       count: assets.length,
+      currentPage: page,
+      totalPages,
+      totalItems,
       data: assets,
     });
   } catch (error) {
+    console.error(error);
+
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
