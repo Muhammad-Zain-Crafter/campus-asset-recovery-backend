@@ -125,6 +125,7 @@ const login = async (req: Request, res: Response) => {
         email: user.email,
         studentId: user.studentId,
         department: user.department,
+        profileImage: user.profileImage,
         role: user.role
       },
     });
