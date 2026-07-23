@@ -5,7 +5,7 @@ import generateToken from "../utils/generateToken.js";
 import { AuthRequest } from "../middlewares/authMiddleware.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/sendEmail.js";
-import { uploadOnCloudinary } from "../config/cloudinary.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../config/cloudinary.js";
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -159,26 +159,54 @@ const getProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
-const updateProfile = async (req: AuthRequest, res: Response) => {
+const updateProfile = async (
+  req: AuthRequest,
+  res: Response
+) => {
   try {
-    const { fullName, department, profileImage } = req.body;
+    const { fullName, department } = req.body;
+
     const user = await User.findById(req.user._id);
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
+
     if (fullName) {
       user.fullName = fullName;
     }
+
     if (department) {
       user.department = department;
     }
-    if (profileImage !== undefined) {
-      user.profileImage = profileImage;
+
+    if (req.file) {
+      if (user.profileImage?.publicId) {
+        await deleteFromCloudinary(user.profileImage.publicId);
+      }
+      const uploadedImage = await uploadOnCloudinary(
+        req.file.path,
+        "student-management/profile-images"
+      );
+
+      if (!uploadedImage) {
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed",
+        });
+      }
+
+      user.profileImage = {
+        url: uploadedImage.secure_url,
+        publicId: uploadedImage.public_id,
+      };
     }
+
     await user.save();
+
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
@@ -191,11 +219,12 @@ const updateProfile = async (req: AuthRequest, res: Response) => {
         profileImage: user.profileImage,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
+
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message: error.message,
     });
   }
 };

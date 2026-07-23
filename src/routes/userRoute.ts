@@ -16,8 +16,10 @@ router.route("/getProfile").get(
     protect, getProfile
 )
 router.route("/updateProfile").put(
-    protect, updateProfile
-)
+  protect,
+  upload.single("profileImage"),
+  updateProfile
+);
 router.route("/change-password").post(
     protect, changePassword
 )
